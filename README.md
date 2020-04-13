@@ -13,10 +13,10 @@ commands work fine without it.
 The `master` branch is never worked on directly. Instead, new branches are
 created (usually for an individual github ticket), we hack, we regularly pull
 new changes into that branch, and after a pull request is created and the
-approved, we merge the code based into `master`.
+approved, we merge the code back into `master`.
 
 The examples below assume the files in the `bin/` directory are in your path.
-If they have not, you have to type the commands explicitly:
+If they are not in yoru path, you have to type the commands explicitly:
 
     bin/git-hub 5738
     bin/git-refresh
@@ -54,9 +54,9 @@ If that branch already exists, it's checked out.
 
 ## Refreshing Your Branch
 
-It's often the case that you want to pull in the latest master to keep your
+It's often the case that you want to pull in the latest `master` to keep your
 code up-to-date. Working on a change for a week with a fast-moving codebase
-can cause serious headaches when it's time to merge. Thus, you shoul regularly
+can cause serious headaches when it's time to merge. Thus, you should regularly
 run the following in your branch (I try to run it at least once per day):
 
     git refresh
@@ -66,7 +66,7 @@ Regardless of the branch you are on, this code:
 * Stashes changes (if any)
 * Checks out master
 * Does a fast-forward merge
-* Checks out your branch (if branc is not master)
+* Checks out your branch (if branch is not master)
 * Rebases onto `master` (if branch is not master)
 * Pops changes from stash, if any
 
@@ -76,9 +76,9 @@ have uncommitted changes.
 ## Merging into `master`
 
 For many companies, a typical git history graph looks like a plate of
-spaghetti someone's thrown at a wall. This makes it very hard to dig through
-your git history, to follow changes, or use tools like `git-bisect`. For us,
-we simply run:
+spaghetti someone's just unswallowed onto your monitor. This makes it very
+hard to dig through your git history, to follow changes, or use tools like
+`git-bisect`. For us, we simply run:
 
     git merge-with-master
 
