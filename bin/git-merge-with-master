@@ -1,0 +1,65 @@
+#!/bin/bash
+
+# vim: filetype=sh
+
+set -e   # exit if any command fails
+
+# default to current branch
+branch=$(git rev-parse --abbrev-ref HEAD)
+
+# confirmation prompt by default
+prompt=1
+
+for arg in "$@"
+do
+    case $arg in
+        -y)
+            prompt=0
+            ;;
+        *)
+            branch=$arg
+            ;;
+    esac
+done
+
+if [ "$branch" == "master" ]; then
+    echo ERROR: You must checkout the branch to be merged or supply branch as argument
+    exit 1
+fi
+
+if [ $prompt == 1 ]; then
+    echo You are going to merge branch $branch with remote master.
+    echo -n "If this is what you want to do please confirm with [Yes]: "
+    read response
+    if [ "X$response" != "XYes" ]; then
+        echo "exiting due to lack of 'Yes' response"
+        exit
+    fi
+fi
+
+## pull latest master
+git checkout master
+git fetch --prune
+git merge --ff-only origin/master
+
+## rebase branch against master and push back to origin
+git rebase master $branch
+git push --force-with-lease origin $branch
+
+## merge branch onto master and push
+git checkout master
+git merge --no-ff $branch
+
+## push new master
+git push origin master
+
+echo
+echo Branch successfully merged and pushed.
+echo
+echo You should now cleanup your branch if you no longer need it using:
+echo
+echo git branch -d $branch
+echo git push origin :$branch
+echo
+echo "And don't forget to close any issues that your PR has addressed."
+echo

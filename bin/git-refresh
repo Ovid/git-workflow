@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# vim: filetype=sh
+
+set -e   # exit if any command fails
+
+prog=$(basename $0)
+branch=$(git rev-parse --abbrev-ref HEAD)
+need_to_stash=$(git status --porcelain -uno)
+
+if [ "$branch" == "master" ]; then
+  git fetch -p
+  if git rev-parse '@{u}' >/dev/null 2>&1; then
+    if [[ $need_to_stash ]]; then
+      git stash save "stashed by $prog (on branch $branch)"
+      git fetch -p
+      git pull --ff-only
+      git stash pop --index
+    else
+      git pull --ff-only
+    fi
+  fi
+  exit 0
+else
+  if [[ $need_to_stash ]]; then
+    git stash save "stashed by $prog (on branch $branch)"
+  fi
+  git checkout master
+  git fetch -p
+  git pull --ff-only
+  git checkout $branch
+
+  if [[ $(git rebase master) ]]; then
+    if [[ $need_to_stash ]]; then
+      git stash pop
+    fi
+  else
+    echo git rebase failed.
+    if [[ $need_to_stash ]]; then
+      echo You have changes stashed by $prog
+      exit 1
+    fi
+  fi
+fi
+
+# Regardless of the branch you are on, this code:
+# - stashes changes (if any)
+# - checks out master
+# - Do a fast-forward merge
+# - checks out your branch (if it's not master)
+# - rebases onto master (if branch is not master)
+# - pops changes from stash, if any

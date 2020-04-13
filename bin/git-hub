@@ -1,0 +1,160 @@
+#!/usr/bin/env perl
+
+use strict;
+use warnings;
+use 5.20.0;
+use feature qw(signatures say);
+no warnings 'experimental::signatures';
+
+use Carp 'croak';
+use FindBin;
+
+use autodie ':all';
+use Config::General;
+use JSON 'decode_json';
+use Text::Unidecode 'unidecode';
+use Pithub;
+my $rcfile = '.git-hub';
+unless (-e $rcfile) {
+    say "No $rcfile found. Exiting";
+    exit;
+}
+my $config = Config::General->new($rcfile);
+
+my $pithub = Pithub->new($config->getall);
+@ARGV = (8635);
+my $issue_id = shift or die "Usage: $0 issue_id";
+
+my $response = $pithub->issues->get( issue_id => $issue_id );
+unless ( $response->success ) {
+    croak( "Error fetchin issue '$issue_id': " . $response->raw_content );
+}
+my $issue = decode_json( $response->response->content );
+
+my $url = $issue->{html_url};
+if ( my $closed_at = $issue->{closed_at} ) {
+    say STDERR "Issue $url closed on $closed_at";
+    exit 1;
+}
+
+if ( my @branches = branches_for($issue_id) ) {
+    if ( @branches > 1 ) {
+        say STDERR "You must check out your branch manually.";
+        say STDERR
+          "The following branches may match your issue id ($issue_id):\n\n @branches";
+        exit 2;
+    }
+    chomp( my $branch = $branches[0] );
+    say $branch;
+    my @command = ( 'git', 'checkout', $branch );
+    say "@command";
+    system(@command);
+    say "$branch checked out";
+}
+else {
+    my $title   = $issue->{title};
+    my $branch  = make_slug("$title-$issue_id");
+    my @command = ( 'git', 'checkout', '-b', $branch );
+    say "@command";
+    system(@command);
+    say "$branch checked out";
+}
+
+sub branches_for ($issue_id) {
+    my @branches = qx(git branch -a);
+    my @matches  = map { trim($_) } grep {/\b$issue_id\b/} @branches;
+    return @matches;
+}
+
+sub make_slug ($name) {
+
+    # XXX bugs waiting to happen
+    $name =~ s/^\s+|\s+$//g;    # trim
+    $name = lc( unidecode($name) );
+    $name =~ s/\s+/_/g;
+    $name =~ tr/-/_/;
+    $name =~ s/__*/_/g;
+    $name =~ s/\W//g;
+    $name =~ tr/_/-/;
+    $name =~ s/--/-/g;
+    return $name;
+}
+
+sub trim($string) {
+    $string =~ s/^\s+|\s+$//g;    # trim
+    return $string;
+}
+
+__END__
+
+=head1 NAME
+
+git-hub - Checkout branch from github, by issue number, creating the branch if necessary
+
+=head1 SYNOPSIS
+
+    git hub $issue_id # checkout the branch for $issue_id
+
+=head1 CONFIG
+
+To use this script, it must find a I<readable> file named F<.git-hub> in the
+current directory. The file should be in the following format:
+
+    user  MyGithubUserName
+    repo  NameOfMyRepo
+    token GithubOathToken
+
+For information on creating the Github oath token:
+
+https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
+
+=head1 DESCRIPTION
+
+This helper script makes it easier (and more consistent) to check out a branch
+from the current branch, based on a github ticket number. There are several possible
+outcomes:
+
+=over 4
+
+=item * No branch found
+
+If the issue is open and no branch for the issue id is found, a new branch
+with a "command line friendly" title (along with issue number) will be
+created.  For example, for issue 5738, with the title "Rework reputation to
+handle faction conflict" is used, the following two commands are equivalent:
+
+    git hub 5738
+
+    git checkout -b rework-reputation-to-handle-faction-conflict-5738
+
+=item * One branch found
+
+If the issue is open and one branch matching that issue number is found, this
+command is equivalent to:
+
+    git checkout $branch_name
+
+The branch name is found by matching C</\b$issue_id\b>, so this is a heuristic check.
+
+=item * Multiple branches found
+
+If multiple branch names match the regex C</\b$issue_id\b/>, you will see a
+message similar to the following, with an exit code of 2:
+
+    $ git hub 2415
+    You must check out your branch manually.
+    The following branches may match your issue id (2415):
+
+        remotes/origin/combat-phases-2415
+        remotes/origin/rework-combat-phases-2415
+
+Naturally this is a heuristic check and may fail.
+
+=item * Issue closed
+
+If the issue is closed, you will get a message similar to the following, with
+an exit code of 1:
+
+    Issue https://github.com/myname/myrepo/issues/2415 closed on 2017-12-20T15:46:07Z
+
+=back
