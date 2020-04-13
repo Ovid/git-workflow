@@ -5,6 +5,12 @@ the World](https://allaroundtheworld.fr/) for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
+There are only three new commands to remember:
+
+* `git hub $issue_number` (create new branch based on a github ticket)
+* `git refresh` (rebase your work on top of current `master`)
+* `git merge-with-master` (cleanly add your branch back to `master`)
+
 Note: only the `bin/git-hub` command assumes you're using github. The other
 commands work fine without it.
 
