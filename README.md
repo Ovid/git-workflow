@@ -5,6 +5,9 @@ the World](https://allaroundtheworld.fr/) for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
+Note: only the `bin/git-hub` command assumes you're using github. The other
+commands work fine without it.
+
 # Assumptions
 
 The `master` branch is never worked on directly. Instead, new branches are
@@ -79,7 +82,9 @@ we simply run:
 
     git merge-with-master
 
-And that will cleanly update `master` and rebase your branch on top of it.
+And that will cleanly update `master` and rebase your branch on top of it, and
+push that change to your origin.
+
 With that, you get a clean git history like this:
 
     | * 44eba1b094 - ...
@@ -103,3 +108,7 @@ With that, you get a clean git history like this:
     | * b3dc3efb2a - ...
     | * ab77373fca - ...
     | * b5491e4ae9 - ...
+
+And when you're done, it will also print out the instructions on how you can
+delete your local and remote copies of the branch, to help you be nice and not
+leave branches cluttering up the repository.
