@@ -15,14 +15,13 @@ use JSON 'decode_json';
 use Text::Unidecode 'unidecode';
 use Pithub;
 my $rcfile = '.git-hub';
-unless (-e $rcfile) {
+unless ( -e $rcfile ) {
     say "No $rcfile found. Exiting";
     exit;
 }
 my $config = Config::General->new($rcfile);
 
-my $pithub = Pithub->new($config->getall);
-@ARGV = (8635);
+my $pithub   = Pithub->new( $config->getall );
 my $issue_id = shift or die "Usage: $0 issue_id";
 
 my $response = $pithub->issues->get( issue_id => $issue_id );
@@ -41,7 +40,7 @@ if ( my @branches = branches_for($issue_id) ) {
     if ( @branches > 1 ) {
         say STDERR "You must check out your branch manually.";
         say STDERR
-          "The following branches may match your issue id ($issue_id):\n\n @branches";
+"The following branches may match your issue id ($issue_id):\n\n @branches";
         exit 2;
     }
     chomp( my $branch = $branches[0] );
@@ -62,7 +61,7 @@ else {
 
 sub branches_for ($issue_id) {
     my @branches = qx(git branch -a);
-    my @matches  = map { trim($_) } grep {/\b$issue_id\b/} @branches;
+    my @matches  = map { trim($_) } grep { /\b$issue_id\b/ } @branches;
     return @matches;
 }
 
