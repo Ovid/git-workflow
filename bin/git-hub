@@ -99,11 +99,17 @@ git-hub - Checkout branch from github, by issue number, creating the branch if n
 To use this script, it must find a I<readable> file named F<.git-hub> in the
 current directory. The file should be in the following format:
 
-    user  MyGithubUserName
-    repo  NameOfMyRepo
+    user  RepoUserName
+    repo  NameOfRepo
     token GithubOathToken
 
-For information on creating the Github oath token:
+So if you want to automatically check out tickets for
+https://github.com/SomeCompany/awesome-repo/, you'd have:
+
+    user SomeCompany
+    repo awesome-repo
+
+To create the the Github oath token:
 
 https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
 
