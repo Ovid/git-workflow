@@ -54,6 +54,7 @@ If that branch already exists, it's checked out.
 
 * `autodie`
 * `Config::General`
+* `IPC::System::Simple`
 * `JSON`
 * `Text::Unidecode`
 * `Pithub`
