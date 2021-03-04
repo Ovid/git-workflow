@@ -59,6 +59,16 @@ If that branch already exists, it's checked out.
 * `Text::Unidecode`
 * `Pithub`
 
+In the `bin/` directory, there's an experimental bash script named
+`bin/git-hub-bash` and that's a bash replacement for the Perl script. However,
+it still requires:
+
+* Perl (version 5.8.0 or above)
+* [jq](https://stedolan.github.io/jq/)
+* curl
+* sed
+* tail
+
 ## Refreshing Your Branch
 
 It's often the case that you want to pull in the latest `master` to keep your
