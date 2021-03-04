@@ -1,0 +1,91 @@
+#!/usr/bin/env bash
+
+# vim: filetype=sh
+
+# requires jq, perl, curl, tail, sed
+# if non-ASCII characters are detected in the title, the Perl module Text::Unidecode must be installed
+
+# make sure we have a .git-hub config file
+config=./.git-hub
+if [[ -z "$1" ]]; then
+    echo "Please provide a github ticket number"
+    echo "Usage: $0 github-ticket-number"
+    exit 1
+else
+    ticket="$1"
+fi
+
+# make sure we have jq installed
+jq=$(which jq)
+if [ -z "${jq+x}" ] ; then
+    echo "You must have jq in your path: https://stedolan.github.io/jq/"
+    exit 1
+fi
+
+set -Eeuo pipefail
+
+# read our config file
+if test -f $config ; then
+    while read var value
+    do
+        export "$var"="$value"
+    done < $config
+else
+  echo "No .git-hub config file found in current directory"
+  exit 2
+fi
+
+# make sure key variables are set
+if [ -z ${user+x} ];  then echo "user is not set in $config file";  exit 3; fi
+if [ -z ${repo+x} ];  then echo "repo is not set in $config file";  exit 3; fi
+if [ -z ${token+x} ]; then echo "token is not set in $config file"; exit 3; fi
+
+# Fetch our JSON
+# https://unix.stackexchange.com/questions/572424/retrieve-both-http-status-code-and-content-from-curl-in-a-shell-script
+url="https://api.github.com/repos/$user/$repo/issues/$ticket"
+response=$(curl -H "Authorization: token $token" -s -w "%{http_code}" $url)
+
+http_code=$(tail -n1 <<< "$response")  # get the last line
+content=$(sed '$ d' <<< "$response")   # get all but the last line which contains the status code
+
+# if it's not a 200 response, assume we failed
+if [[ "$http_code" -ne 200 ]]; then
+    echo "GET $url failed with code $http_code";
+    exit 4;
+fi
+
+state=$(echo "$content" | $jq --raw-output '.state')
+title=$(echo "$content" | $jq '.title')
+
+if [[ "$state" != "open" ]]; then
+    echo "Ticket $ticket: $title"
+    echo "Not creating branch because state is not 'open' (it's '$state')"
+    exit 5
+fi
+
+echo $title
+
+# if title contains any non-ASCII characters ...
+if [[ $title = *[![:ascii:]]* ]]; then
+    if [ -z $(perldoc -l Text::Unidecode) ]; then
+        echo "You must install the Perl module Text::Unidecode. Try the command:"
+        echo "cpan Text::Unidecode"
+        exit 1
+    fi
+
+    title=$(perl -CAS -MText::Unidecode=unidecode -e 'print unidecode(join " " => @ARGV)' $title)
+fi
+export git_hub_title="$title $ticket"
+branch=$(perl <<'__HERE__'
+my $name = lc $ENV{git_hub_title};
+$name =~ s/^\s+|\s+$//g;    # trim
+$name =~ s/\s+/_/g;
+$name =~ tr/-/_/;
+$name =~ s/__*/_/g;
+$name =~ s/\W//g;
+$name =~ tr/_/-/;
+$name =~ s/--/-/g;
+print $name
+__HERE__
+)
+git checkout -b $branch
