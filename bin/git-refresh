@@ -2,13 +2,104 @@
 
 # vim: filetype=sh
 
-set -e   # exit if any command fails
+# vim: filetype=sh
+
+function show_help() {
+    less <<END
+$(basename "$0") [-?|-h|--help]
+
+    -h --help Show this help and exit
+
+Stashes any local changes, if necessary.
+
+Regardless of the branch you are on, this code:
+- stashes changes (if any)
+- checks out default branch
+- Do a fast-forward merge
+- checks out your branch (if it's not default branch)
+- rebases onto default branch (if branch is not default branch)
+- pops changes from stash, if any
+
+Note that if there is a conflict during rebase, any changes remaining
+will stay stashed.
+
+This project is on github at https://github.com/Ovid/git-workflow
+
+CONFIG FILE
+
+Requires that the current directory have a .git-hub file in the following
+format:
+
+    user   Ovid
+    repo   git-workflow
+    token  <personal access token>
+    target main
+
+You can get a personal access token from:
+
+https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
+
+We strongly recommend that you get a "read-only" token for use with this. If
+it had more privileges, falling into the wrong hands might be a security hole.
+
+DEPENDENCIES
+
+END
+}
+
+# confirmation prompt by default
+prompt=1
+
+# Parse arguments
+
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+case $key in
+    -?|-h|--help)
+    shift # past argument
+    show_help;
+    exit;
+    ;;
+    -y|--yes)
+    prompt=0
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+set -Eeuo pipefail
+
+# make sure we have a .git-hub config file
+config=./.git-hub
+if test -f $config ; then
+    while read var value
+    do
+        # skip comments in config file
+        [[ $var =~ ^\s*# ]] && continue
+
+        # skip blank lines
+        [[ $var =~ ^\s*$ ]] && continue
+        export "$var"="$value"
+    done < $config
+else
+  echo "No $config config file found in current directory"
+  exit 2
+fi
+
+# make sure key variables are set
+if [ -z ${target+x} ]; then echo "target is not set in $config file";  exit 3; fi
 
 prog=$(basename $0)
 branch=$(git rev-parse --abbrev-ref HEAD)
 need_to_stash=$(git status --porcelain -uno)
 
-if [ "$branch" == "master" ]; then
+if [ "$branch" == "$target" ]; then
   git fetch -p
   if git rev-parse '@{u}' >/dev/null 2>&1; then
     if [[ $need_to_stash ]]; then
@@ -25,12 +116,12 @@ else
   if [[ $need_to_stash ]]; then
     git stash save "stashed by $prog (on branch $branch)"
   fi
-  git checkout master
+  git checkout $target
   git fetch -p
   git pull --ff-only
   git checkout $branch
 
-  if [[ $(git rebase master) ]]; then
+  if [[ $(git rebase $target) ]]; then
     if [[ $need_to_stash ]]; then
       git stash pop
     fi
@@ -45,8 +136,8 @@ fi
 
 # Regardless of the branch you are on, this code:
 # - stashes changes (if any)
-# - checks out master
+# - checks out $target
 # - Do a fast-forward merge
-# - checks out your branch (if it's not master)
-# - rebases onto master (if branch is not master)
+# - checks out your branch (if it's not $target)
+# - rebases onto $target (if branch is not $target)
 # - pops changes from stash, if any
