@@ -1,0 +1,17 @@
+# rename this file to .git-hub and drop it in the git directory you'll be
+# working with
+
+# Assuming a repo named https://github.com/Ovid/git-workflow/
+# This is the user
+user   Ovid
+
+# this is the repo name
+repo   git-workflow
+
+# You want to generate an API token. We recommend read-only
+# https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
+# the token below is fake
+token  1234567890abcdef1234567890abcdef12345678
+
+# The name of the default branch you'll be branching off of
+target main
