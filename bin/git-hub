@@ -95,7 +95,6 @@ if test -f $config ; then
 
         # skip blank lines
         [[ $var =~ ^\s*$ ]] && continue
-        echo $var = $value
         export "$var"="$value"
     done < $config
 else

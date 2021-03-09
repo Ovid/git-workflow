@@ -63,7 +63,8 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 
 set -Eeuo pipefail
 
-if [[ -z "$1" ]]; then
+if [ -z ${1+x} ]; then
+
     # default to current branch
     branch=$(git rev-parse --abbrev-ref HEAD)
 else
@@ -80,7 +81,6 @@ if test -f $config ; then
 
         # skip blank lines
         [[ $var =~ ^\s*$ ]] && continue
-        echo $var = $value
         export "$var"="$value"
     done < $config
 else
