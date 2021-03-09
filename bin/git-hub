@@ -1,165 +1,157 @@
-#!/usr/bin/env perl
+#!/usr/bin/env bash
 
-use strict;
-use warnings;
-use 5.20.0;
-use feature qw(signatures say);
-no warnings 'experimental::signatures';
+# vim: filetype=sh
 
-use Carp 'croak';
-use FindBin;
+function show_help() {
+    less <<END
+$(basename "$0") [-h]  ticket_number
 
-use autodie ':all';
-use Config::General;
-use JSON 'decode_json';
-use Text::Unidecode 'unidecode';
-use Pithub;
-my $rcfile = '.git-hub';
-unless ( -e $rcfile ) {
-    say "No $rcfile found. Exiting";
+    -h --help Show this help and exit
+
+Attempts to grab the ticket of ticket_number and create a branch
+of the current branch using the ticket name and number.
+
+If the ticket status is not "open", it will abort.
+
+This project is on github at https://github.com/Ovid/git-workflow
+
+CONFIG FILE
+
+Requires that the current directory have a .git-hub file in the following
+format:
+
+    user   Ovid
+    repo   git-workflow
+    token  <personal access token>
+    target main
+
+You can get a personal access token from:
+
+https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
+
+We strongly recommend that you get a "read-only" token for use with this. If
+it had more privileges, falling into the wrong hands might be a security hole.
+
+DEPENDENCIES
+
+This script requires git, jq, perl, curl, tail, sed. Most of these are
+standard on Linux and Mac OS X.
+
+You must have "jq" in your PATH to parse JSON. You may download it
+from https://stedolan.github.io/jq/.
+
+You must have Perl 5.8 or above in your path. If the title of your ticket has
+non-ASCII characters, you must also have Text::Unidecode
+(https://metacpan.org/pod/Text::Unidecode) installed with Perl. This module
+has no non-core dependencies. You can install it with:
+
+    cpan Text::Unidecode
+END
+}
+
+# make sure we have jq installed
+jq=$(which jq)
+if [ -z "${jq+x}" ] ; then
+    echo "You must have jq in your path: https://stedolan.github.io/jq/"
+    exit 1
+fi
+
+# Parse arguments
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+case $key in
+    -?|-h|--help)
+    shift # past argument
+    show_help;
     exit;
-}
-my $config = Config::General->new($rcfile);
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
 
-my $pithub   = Pithub->new( $config->getall );
-my $issue_id = shift or die "Usage: $0 issue_id";
+if [[ -z "$1" ]]; then
+    echo "Please provide a github ticket number"
+    echo "Usage: $0 github-ticket-number"
+    exit 1
+else
+    ticket="$1"
+fi
 
-my $response = $pithub->issues->get( issue_id => $issue_id );
-unless ( $response->success ) {
-    croak( "Error fetchin issue '$issue_id': " . $response->raw_content );
-}
-my $issue = decode_json( $response->response->content );
+set -Eeuo pipefail
 
-my $url = $issue->{html_url};
-if ( my $closed_at = $issue->{closed_at} ) {
-    say STDERR "Issue $url closed on $closed_at";
-    exit 1;
-}
+# read our config file
+config=./.git-hub
+if test -f $config ; then
+    while read var value
+    do
+        # skip comments in config file
+        [[ $var =~ ^\s*# ]] && continue
 
-if ( my @branches = branches_for($issue_id) ) {
-    if ( @branches > 1 ) {
-        say STDERR "You must check out your branch manually.";
-        say STDERR
-"The following branches may match your issue id ($issue_id):\n\n @branches";
-        exit 2;
-    }
-    chomp( my $branch = $branches[0] );
-    say $branch;
-    my @command = ( 'git', 'checkout', $branch );
-    say "@command";
-    system(@command);
-    say "$branch checked out";
-}
-else {
-    my $title   = $issue->{title};
-    my $branch  = make_slug("$title-$issue_id");
-    my @command = ( 'git', 'checkout', '-b', $branch );
-    say "@command";
-    system(@command);
-    say "$branch checked out";
-}
+        # skip blank lines
+        [[ $var =~ ^\s*$ ]] && continue
+        echo $var = $value
+        export "$var"="$value"
+    done < $config
+else
+  echo "No $config config file found in current directory"
+  exit 2
+fi
 
-sub branches_for ($issue_id) {
-    my @branches = qx(git branch -a);
-    my @matches  = map { trim($_) } grep { /\b$issue_id\b/ } @branches;
-    return @matches;
-}
+# make sure key variables are set
+if [ -z ${user+x} ];  then echo "user is not set in $config file";  exit 3; fi
+if [ -z ${repo+x} ];  then echo "repo is not set in $config file";  exit 3; fi
+if [ -z ${token+x} ]; then echo "token is not set in $config file"; exit 3; fi
 
-sub make_slug ($name) {
+# Fetch our JSON
+# https://unix.stackexchange.com/questions/572424/retrieve-both-http-status-code-and-content-from-curl-in-a-shell-script
+url="https://api.github.com/repos/$user/$repo/issues/$ticket"
+response=$(curl -H "Authorization: token $token" -s -w "%{http_code}" $url)
 
-    # XXX bugs waiting to happen
-    $name =~ s/^\s+|\s+$//g;    # trim
-    $name = lc( unidecode($name) );
-    $name =~ s/\s+/_/g;
-    $name =~ tr/-/_/;
-    $name =~ s/__*/_/g;
-    $name =~ s/\W//g;
-    $name =~ tr/_/-/;
-    $name =~ s/--/-/g;
-    return $name;
-}
+http_code=$(tail -n1 <<< "$response")  # get the last line
+content=$(sed '$ d' <<< "$response")   # get all but the last line which contains the status code
 
-sub trim($string) {
-    $string =~ s/^\s+|\s+$//g;    # trim
-    return $string;
-}
+# if it's not a 200 response, assume we failed
+if [[ "$http_code" -ne 200 ]]; then
+    echo "GET $url failed with code $http_code";
+    exit 4;
+fi
 
-__END__
+state=$(echo "$content" | $jq --raw-output '.state')
+title=$(echo "$content" | $jq '.title')
 
-=head1 NAME
+# if title contains any non-ASCII characters ...
+if [[ $title = *[![:ascii:]]* ]]; then
+    if [ -z $(perldoc -l Text::Unidecode) ]; then
+        echo "You must install the Perl module Text::Unidecode. Try the command:"
+        echo "cpan Text::Unidecode"
+        exit 1
+    fi
 
-git-hub - Checkout branch from github, by issue number, creating the branch if necessary
+    title=$(perl -CAS -MText::Unidecode=unidecode -e 'print unidecode(join " " => @ARGV)' $title)
+fi
+export git_hub_title="$title $ticket"
+branch=$(perl <<'__HERE__'
+my $name = lc $ENV{git_hub_title};
+$name =~ s/^\s+|\s+$//g;    # trim
+$name =~ s/\s+/_/g;
+$name =~ tr/-/_/;
+$name =~ s/__*/_/g;
+$name =~ s/\W//g;
+$name =~ tr/_/-/;
+$name =~ s/--/-/g;
+print $name
+__HERE__
+)
 
-=head1 SYNOPSIS
-
-    git hub $issue_id # checkout the branch for $issue_id
-
-=head1 CONFIG
-
-To use this script, it must find a I<readable> file named F<.git-hub> in the
-current directory. The file should be in the following format:
-
-    user  RepoUserName
-    repo  NameOfRepo
-    token GithubOathToken
-
-So if you want to automatically check out tickets for
-https://github.com/SomeCompany/awesome-repo/, you'd have:
-
-    user SomeCompany
-    repo awesome-repo
-
-To create the the Github oath token:
-
-https://help.github.com/en/github/authenticating-to-github/creating-a-personal-access-token-for-the-command-line
-
-=head1 DESCRIPTION
-
-This helper script makes it easier (and more consistent) to check out a branch
-from the current branch, based on a github ticket number. There are several possible
-outcomes:
-
-=over 4
-
-=item * No branch found
-
-If the issue is open and no branch for the issue id is found, a new branch
-with a "command line friendly" title (along with issue number) will be
-created.  For example, for issue 5738, with the title "Rework reputation to
-handle faction conflict" is used, the following two commands are equivalent:
-
-    git hub 5738
-
-    git checkout -b rework-reputation-to-handle-faction-conflict-5738
-
-=item * One branch found
-
-If the issue is open and one branch matching that issue number is found, this
-command is equivalent to:
-
-    git checkout $branch_name
-
-The branch name is found by matching C</\b$issue_id\b>, so this is a heuristic check.
-
-=item * Multiple branches found
-
-If multiple branch names match the regex C</\b$issue_id\b/>, you will see a
-message similar to the following, with an exit code of 2:
-
-    $ git hub 2415
-    You must check out your branch manually.
-    The following branches may match your issue id (2415):
-
-        remotes/origin/combat-phases-2415
-        remotes/origin/rework-combat-phases-2415
-
-Naturally this is a heuristic check and may fail.
-
-=item * Issue closed
-
-If the issue is closed, you will get a message similar to the following, with
-an exit code of 1:
-
-    Issue https://github.com/myname/myrepo/issues/2415 closed on 2017-12-20T15:46:07Z
-
-=back
+if [[ "$state" != "open" ]]; then
+    echo "Ticket $ticket: $title"
+    echo "Not creating the branch '$branch' because it is not 'open' (it's '$state')"
+    exit 5
+fi
+git checkout -b $branch

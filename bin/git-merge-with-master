@@ -2,33 +2,102 @@
 
 # vim: filetype=sh
 
-set -e   # exit if any command fails
+function show_help() {
+    less <<END
+$(basename "$0") [-h|--help] [-y|--yes]
 
-# default to current branch
-branch=$(git rev-parse --abbrev-ref HEAD)
+    -h --help Show this help and exit
+    -y --yes  Merge this branch to the target without prompting
+
+Attempts to safely merge this branch on top of your target branch.
+
+This project is on github at https://github.com/Ovid/git-workflow
+
+CONFIG FILE
+
+Requires that the current directory have a .git-hub file in the following
+format:
+
+    user   Ovid
+    repo   git-workflow
+    token  <personal access token>
+    target main
+
+You can get a personal access token from:
+
+https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
+
+We strongly recommend that you get a "read-only" token for use with this. If
+it had more privileges, falling into the wrong hands might be a security hole.
+
+DEPENDENCIES
+
+END
+}
 
 # confirmation prompt by default
 prompt=1
 
-for arg in "$@"
-do
-    case $arg in
-        -y)
-            prompt=0
-            ;;
-        *)
-            branch=$arg
-            ;;
-    esac
-done
+# Parse arguments
 
-if [ "$branch" == "master" ]; then
+POSITIONAL=()
+while [[ $# -gt 0 ]]
+do
+key="$1"
+case $key in
+    -?|-h|--help)
+    shift # past argument
+    show_help;
+    exit;
+    ;;
+    -y|--yes)
+    prompt=0
+    ;;
+    *)    # unknown option
+    POSITIONAL+=("$1") # save it in an array for later
+    shift # past argument
+    ;;
+esac
+done
+set -- "${POSITIONAL[@]}" # restore positional parameters
+
+set -Eeuo pipefail
+
+if [[ -z "$1" ]]; then
+    # default to current branch
+    branch=$(git rev-parse --abbrev-ref HEAD)
+else
+    branch="$1"
+fi
+
+# make sure we have a .git-hub config file
+config=./.git-hub
+if test -f $config ; then
+    while read var value
+    do
+        # skip comments in config file
+        [[ $var =~ ^\s*# ]] && continue
+
+        # skip blank lines
+        [[ $var =~ ^\s*$ ]] && continue
+        echo $var = $value
+        export "$var"="$value"
+    done < $config
+else
+  echo "No $config config file found in current directory"
+  exit 2
+fi
+
+# make sure key variables are set
+if [ -z ${target+x} ]; then echo "target is not set in $config file";  exit 3; fi
+
+if [ "$branch" == "$target" ]; then
     echo ERROR: You must checkout the branch to be merged or supply branch as argument
     exit 1
 fi
 
 if [ $prompt == 1 ]; then
-    echo You are going to merge branch $branch with remote master.
+    echo You are going to merge branch $branch with remote $target.
     echo -n "If this is what you want to do please confirm with [Yes]: "
     read response
     if [ "X$response" != "XYes" ]; then
@@ -38,20 +107,20 @@ if [ $prompt == 1 ]; then
 fi
 
 ## pull latest master
-git checkout master
+git checkout $target
 git fetch --prune
-git merge --ff-only origin/master
+git merge --ff-only origin/$target
 
 ## rebase branch against master and push back to origin
-git rebase master $branch
+git rebase $target $branch
 git push --force-with-lease origin $branch
 
 ## merge branch onto master and push
-git checkout master
+git checkout $target
 git merge --no-ff $branch
 
 ## push new master
-git push origin master
+git push origin $target
 
 echo
 echo Branch successfully merged and pushed.
