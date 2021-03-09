@@ -1,4 +1,8 @@
-# rename this file to .git-hub and drop it in the git directory you'll be
+# Lines beginning with '#' are comments
+# Blank lines are ignored
+# other lines are parsed as key/value tokens separated by whitespace
+
+# Rename this file to .git-hub and drop it in the git directory you'll be
 # working with
 
 # Assuming a repo named https://github.com/Ovid/git-workflow/
