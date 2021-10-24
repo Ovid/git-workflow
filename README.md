@@ -1,4 +1,3 @@
-# git-workflow
 
 This repo contains a simplified subset of the git tools used by [All Around
 the World](https://allaroundtheworld.fr/) for our software development. It
@@ -9,7 +8,7 @@ There are only three new commands to remember:
 
 * `git hub $issue_number` (create new branch based on a github ticket)
 * `git refresh` (rebase your work on top of the current default branch)
-* `git merge-with-master` (cleanly add your branch back to the default branch)
+* `git done` (cleanly add your branch back to the default branch)
 
 Note: only the `bin/git-hub` command assumes you're using github. The other
 commands work fine without it.
@@ -27,7 +26,7 @@ If they are not in yoru path, you have to type the commands explicitly:
 
     bin/git-hub 5738
     bin/git-refresh
-    bin/git-merge-with-master
+    bin/git-done
 
 # The Commands
 
@@ -73,7 +72,7 @@ spaghetti someone's just unswallowed onto your monitor. This makes it very
 hard to dig through your git history, to follow changes, or use tools like
 `git-bisect`. For us, we simply run:
 
-    git merge-with-master
+    git done
 
 And that will cleanly update the default branch and rebase your branch on top
 of it, and push that change to your origin.
@@ -137,3 +136,10 @@ it had more privileges, falling into the wrong hands might be a security hole.
    `Text::Unidecode` installed with Perl.
 6. [jq](https://stedolan.github.io/jq/) must be installed if you use the `git-hub` script
    (https://stedolan.github.io/jq/)
+
+# Changes
+
+`git done` used to be called `git merge-with-master`, but with so many
+projects having a different "source" branch name, `merge-with-master` does not
+make sense any more. `git done` behaves exactl the same as
+`merge-with-master`.
