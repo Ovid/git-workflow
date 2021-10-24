@@ -4,7 +4,7 @@ the World](https://allaroundtheworld.fr/) for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
-There are only fourt new commands to remember:
+There are only four new commands to remember:
 
 * `git hub $issue_number` (create new branch based on a github ticket)
 * `git refresh` (rebase your work on top of the current default branch)
