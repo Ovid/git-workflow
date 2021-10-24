@@ -81,10 +81,8 @@ if [ "$branch" == "$target" ]; then
     exit 1
 else
     if [ -z "$force" ]; then
-        echo no force
         git push --set-upstream origin $branch
     else
-        echo force
         git push -f --set-upstream origin $branch
     fi
 fi
