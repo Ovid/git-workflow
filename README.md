@@ -46,7 +46,7 @@ is all that you need.
 The examples below assume the files in the `bin/` directory are in your path.
 If they are not in yoru path, you have to type the commands explicitly:
 
-    bin/git-hub 5738   # don't use 
+    bin/git-hub 5738   # don't use if you don't use github
     bin/git-refresh
     bin/git-pushback
     bin/git-done
