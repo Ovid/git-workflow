@@ -30,17 +30,7 @@ CONFIG FILE
 Requires that the current directory have a .git-hub file in the following
 format:
 
-    user   Ovid
-    repo   git-workflow
-    token  <personal access token>
     target main
-
-You can get a personal access token from:
-
-https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token
-
-We strongly recommend that you get a "read-only" token for use with this. If
-it had more privileges, falling into the wrong hands might be a security hole.
 
 DEPENDENCIES
 
