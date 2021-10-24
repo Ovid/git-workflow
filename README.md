@@ -6,7 +6,7 @@ together.
 
 There are only four new commands to remember:
 
-* `git hub $issue_number` (create new branch based on a github ticket)
+* `git hub $issue_number` (optional. create new branch based on a github ticket)
 * `git refresh` (rebase your work on top of the current default branch)
 * `git pushback` (pushes your changes to origin)
 * `git done` (cleanly add your branch back to the default branch)
@@ -22,10 +22,31 @@ we hack, we regularly pull new changes into that branch, and after a pull
 request is created and the approved, we merge the code back into the default
 branch.
 
+To start, in your primary git repo directory, you want to do this:
+
+    echo 'target main' >>  .git-hub
+
+Yes, the name `.git-hub` is not optimal. It will get changed in a later
+release.
+
+The name `main` should be replaced by the main branch you need to branch off
+of. Examples:
+
+    echo 'target main' >>  .git-hub
+    echo 'target master' >>  .git-hub
+    echo 'target dev' >>  .git-hub
+    echo 'target trunk' >>  .git-hub
+
+If you use the `bin/git-hub` example, you'll need to see the code to
+understand the full config file example. Otherwise, the `echo` command above
+is all that you need.
+
+(The `trunk` example is from a client who switched from SubVersion)
+
 The examples below assume the files in the `bin/` directory are in your path.
 If they are not in yoru path, you have to type the commands explicitly:
 
-    bin/git-hub 5738
+    bin/git-hub 5738   # don't use 
     bin/git-refresh
     bin/git-pushback
     bin/git-done
@@ -44,6 +65,8 @@ conflict", you run the following command:
 And you're in a shiny new branch named `rework-reputation-to-handle-faction-conflict-5738`.
 
 If that branch already exists, it's checked out.
+
+This command is not required. Instead, create your own version if you need it.
 
 ## Refreshing Your Branch
 
