@@ -4,10 +4,11 @@ the World](https://allaroundtheworld.fr/) for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
-There are only three new commands to remember:
+There are only fourt new commands to remember:
 
 * `git hub $issue_number` (create new branch based on a github ticket)
 * `git refresh` (rebase your work on top of the current default branch)
+* `git pushback` (pushes your changes to origin)
 * `git done` (cleanly add your branch back to the default branch)
 
 Note: only the `bin/git-hub` command assumes you're using github. The other
@@ -26,6 +27,7 @@ If they are not in yoru path, you have to type the commands explicitly:
 
     bin/git-hub 5738
     bin/git-refresh
+    bin/git-pushback
     bin/git-done
 
 # The Commands
@@ -64,6 +66,27 @@ Regardless of the branch you are on, this code:
 
 In other words, it cleanly rebases your code on top of master, even if you
 have uncommitted changes.
+
+## Pushing back to origin
+
+For many workflows, you will need to create a pull request (or merge request,
+if you're using gitlab). The easiest way to ensure that `origin` always has
+the latest changes is to use:
+
+    git pushback
+
+
+That only works on branches. It's equivalent to:
+
+    git push --set-upstream origin your-branch-name
+
+If you must force the push, use `--force`.  Use this only if you know what
+this is and why you want it. It's probably safe if you are the only person
+working on this branch and you don't have it checked out anywhere else.
+
+    git pushback -f
+    # or
+    git pushback --force
 
 ## Merging into the default branch
 
