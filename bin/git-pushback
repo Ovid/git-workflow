@@ -7,7 +7,7 @@ function show_help() {
 $(basename "$0")
 
     -? -h --help Show this help and exit
-    -force Force the push (use with caution!)
+    -force Force the push via --force-with-lease
 
 Attempts to push this branch back to origin with the current branch name. You
 can only use 'git pushback' a branch that is not your target branch (see
@@ -20,7 +20,7 @@ CONFIG FILE
 Requires that the current directory have a .git-hub file in the following
 format:
 
-    target main
+    target main # or whatever your source branch is named
 
 DEPENDENCIES
 
@@ -83,6 +83,6 @@ else
     if [ -z "$force" ]; then
         git push --set-upstream origin $branch
     else
-        git push -f --set-upstream origin $branch
+        git push --force-with-lease --set-upstream origin $branch
     fi
 fi
