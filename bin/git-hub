@@ -23,7 +23,6 @@ format:
     user   Ovid
     repo   git-workflow
     token  <personal access token>
-    target main
 
 You can get a personal access token from:
 
