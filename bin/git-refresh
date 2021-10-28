@@ -116,7 +116,6 @@ else
       git stash pop
     fi
   else
-    echo git rebase failed.
     if [[ $need_to_stash ]]; then
       echo You have changes stashed by $prog
       exit 1
