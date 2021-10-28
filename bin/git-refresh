@@ -6,14 +6,15 @@
 
 function show_help() {
     less <<END
-$(basename "$0") [-?|-h|--help]
+$(basename "$0") [-?|-h|--help|-s|--stash]
 
-    -h --help Show this help and exit
+    -h --help   Show this help and exit
+    -s --stash  Stash changes, if needed
 
 Stashes any local changes, if necessary.
 
 Regardless of the branch you are on, this code:
-- stashes changes (if any)
+- stashes changes (if any) (if --stash is passed)
 - checks out default branch
 - Do a fast-forward merge
 - checks out your branch (if it's not default branch)
@@ -37,23 +38,22 @@ DEPENDENCIES
 END
 }
 
-# confirmation prompt by default
-prompt=1
+stash=0
 
 # Parse arguments
-
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
 key="$1"
 case $key in
+    -s|--stash)
+    stash=1
+    shift
+    ;;
     -?|-h|--help)
     shift # past argument
     show_help;
     exit;
-    ;;
-    -y|--yes)
-    prompt=0
     ;;
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
@@ -93,10 +93,15 @@ if [ "$branch" == "$target" ]; then
   git fetch -p
   if git rev-parse '@{u}' >/dev/null 2>&1; then
     if [[ $need_to_stash ]]; then
-      git stash save "stashed by $prog (on branch $branch)"
-      git fetch -p
-      git pull --ff-only
-      git stash pop --index
+      if [ $stash == 1 ]; then
+        git stash save "stashed by $prog (on branch $branch)"
+        git fetch -p
+        git pull --ff-only
+        git stash pop --index
+      else
+        echo You have uncommitted changes. Commit or stash them before rerunning $prog
+        exit 1
+      fi
     else
       git pull --ff-only
     fi
@@ -104,7 +109,12 @@ if [ "$branch" == "$target" ]; then
   exit 0
 else
   if [[ $need_to_stash ]]; then
-    git stash save "stashed by $prog (on branch $branch)"
+    if [ $stash == 1 ]; then
+      git stash save "stashed by $prog (on branch $branch)"
+    else
+        echo You have uncommitted changes. Commit or stash them before rerunning $prog
+        exit 1
+      fi
   fi
   git checkout $target
   git fetch -p
