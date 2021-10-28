@@ -167,7 +167,13 @@ token](https://docs.github.com/en/github/authenticating-to-github/creating-a-per
 We strongly recommend that you get a "read-only" token for use with this. If
 it had more privileges, falling into the wrong hands might be a security hole.
 
+If you do not use the `bin/git-hub` tool, you can just have the following:
+
+    target main
+
 # Caveats
+
+These caveat's only apply to `bin/git-hub`.
 
 1. The new branch that is created is based on the branch you're on, so you
    probably want to run this from the default branch
@@ -185,7 +191,13 @@ it had more privileges, falling into the wrong hands might be a security hole.
 
 # Changes
 
-`git done` used to be called `git merge-with-master`, but with so many
+2021-10-28 - `git-refresh` no longer automaticallys stashes uncommitted
+changes. It was a great feature, but it turns out it's an anti-feature for
+those new to `git`. If there was a rebase conflict, they'd lose their changes.
+
+2021-10-24 - `git done` used to be called `git merge-with-master`, but with so many
 projects having a different "source" branch name, `merge-with-master` does not
 make sense any more. `git done` behaves exactl the same as
 `merge-with-master`.
+
+
