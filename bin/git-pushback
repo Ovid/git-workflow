@@ -14,16 +14,6 @@ can only use 'git pushback' a branch that is not your target branch (see
 CONFIG FILE below)
 
 This project is on github at https://github.com/Ovid/git-workflow
-
-CONFIG FILE
-
-Requires that the current directory have a .git-hub file in the following
-format:
-
-    target main # or whatever your source branch is named
-
-DEPENDENCIES
-
 END
 }
 
@@ -48,28 +38,11 @@ set -- "${POSITIONAL[@]}" # restore positional parameters
 
 set -Eeuo pipefail
 
-# default to current branch
-branch=$(git rev-parse --abbrev-ref HEAD)
-
-# make sure we have a .git-hub config file
-config=./.git-hub
-if test -f $config ; then
-    while read var value
-    do
-        # skip comments in config file
-        [[ $var =~ ^\s*# ]] && continue
-
-        # skip blank lines
-        [[ $var =~ ^\s*$ ]] && continue
-        export "$var"="$value"
-    done < $config
-else
-  echo "No $config config file found in current directory"
-  exit 2
+target=$(basename $( git symbolic-ref refs/remotes/origin/HEAD ) )
+if [ -z $target ]; then
+    echo Could not determine target branch via '"basename $( git symbolic-ref refs/remotes/origin/HEAD )"'
+    exit 1
 fi
-
-# make sure key variables are set
-if [ -z ${target+x} ]; then echo "target is not set in $config file";  exit 3; fi
 
 if [ "$branch" == "$target" ]; then
     echo ERROR: You must checkout the branch to be merged or supply branch as argument
