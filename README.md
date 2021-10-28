@@ -174,19 +174,30 @@ These caveat's only apply to `bin/git-hub`.
 
 # Changes
 
-2021-10-28 - `git-refresh` no longer automaticallys stashes uncommitted
-              changes. It was a great feature, but it turns out it's an
-              anti-feature for those new to `git`. If there was a rebase
-              conflict, they'd lose their changes because they would forget
-              to run `git stash pop` after.
-           -  We now automatically detect the main branch you should be
-              branching off of, refreshing from, and pushing back to. 
-              Only `bin/git-hub` requires a config file now.
+2021-10-28 
 
-2021-10-24 - `git done` used to be called `git merge-with-master`, but with so
-             many projects having a different "source" branch name,
-             `merge-with-master` does not make sense any more. `git done`
-             behaves exactly the same as `merge-with-master`, but uses the
-             correct target branch.
+    - `git-refresh` no longer automaticallys stashes uncommitted
+      changes. It was a great feature, but it turns out it's an
+      anti-feature for those new to `git`. If there was a rebase
+      conflict, they'd lose their changes because they would forget
+      to run `git stash pop` after.
 
+    - We now automatically detect the main branch you should be
+      branching off of, refreshing from, and pushing back to. 
+      Only `bin/git-hub` requires a config file now.
 
+2021-10-24
+
+    - `git done` used to be called `git merge-with-master`, but with so
+      many projects having a different "source" branch name,
+      `merge-with-master` does not make sense any more. `git done`
+      behaves exactly the same as `merge-with-master`, but uses the
+      correct target branch.
+
+# ACKNOWLEDGEMENTS
+
+The following have added several valuable suggestions to this project.
+
+* Peter Mottram
+* Noel Maddy
+* Branislav Zahradník
