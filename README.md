@@ -17,31 +17,15 @@ commands work fine without it.
 # Assumptions
 
 The default branch (usually `main` or `master`) is never worked on directly.
+
+We derive the default branch via:
+
+    basename $( git symbolic-ref refs/remotes/origin/HEAD )
+
 Instead, new branches are created (usually for an individual github ticket),
 we hack, we regularly pull new changes into that branch, and after a pull
 request is created and the approved, we merge the code back into the default
 branch.
-
-To start, in your primary git repo directory, you want to do this:
-
-    echo 'target main' >>  .git-hub
-
-Yes, the name `.git-hub` is not optimal. It will get changed in a later
-release.
-
-The name `main` should be replaced by the main branch you need to branch off
-of. Examples:
-
-    echo 'target main' >>  .git-hub
-    echo 'target master' >>  .git-hub
-    echo 'target dev' >>  .git-hub
-    echo 'target trunk' >>  .git-hub
-
-If you use the `bin/git-hub` example, you'll need to see the code to
-understand the full config file example. Otherwise, the `echo` command above
-is all that you need.
-
-(The `trunk` example is from a client who switched from SubVersion)
 
 The examples below assume the files in the `bin/` directory are in your path.
 If they are not in yoru path, you have to type the commands explicitly:
@@ -80,15 +64,18 @@ day):
 
 Regardless of the branch you are on, this code:
 
-* Stashes changes (if any)
 * Checks out master
 * Does a fast-forward merge
 * Checks out your branch (if branch is not master)
 * Rebases onto the default branch (if branch is not already the default branch)
-* Pops changes from stash, if any
 
-In other words, it cleanly rebases your code on top of master, even if you
-have uncommitted changes.
+In other words, it cleanly rebases your code on top of the target branch.
+
+If you have uncommitted changes, `git refresh` will print an error an exit. If
+you pass `--stash` (or `-s`), it will stash your changes, run the commands,
+and the pop your changes. However, this means that if you have a rebase
+conflict, you will have stashed changes you will need to remember to pop off
+the stash.
 
 ## Pushing back to origin
 
@@ -98,14 +85,13 @@ the latest changes is to use:
 
     git pushback
 
-
 That only works on branches. It's equivalent to:
 
     git push --set-upstream origin your-branch-name
 
-If you must force the push, use `--force`.  Use this only if you know what
-this is and why you want it. It's probably safe if you are the only person
-working on this branch and you don't have it checked out anywhere else.
+If you must force the push, use `--force`. Internally, we use
+`--force-with-leaase` which will overwrite the remote changes, but only if
+no one else has pushed changes there.
 
     git pushback -f
     # or
@@ -153,13 +139,12 @@ leave branches cluttering up the repository.
 
 # Config File
 
-Requires that the current directory have a `.git-hub` file in the following
-format:
+If you use the `git hub` command, it requires that the current directory have
+a `.git-hub` file in the following format:
 
     user   Ovid
     repo   git-workflow
     token  <personal access token>
-    target main
 
 See the [github documentation for creating a personal access
 token](https://docs.github.com/en/github/authenticating-to-github/creating-a-personal-access-token).
@@ -167,9 +152,7 @@ token](https://docs.github.com/en/github/authenticating-to-github/creating-a-per
 We strongly recommend that you get a "read-only" token for use with this. If
 it had more privileges, falling into the wrong hands might be a security hole.
 
-If you do not use the `bin/git-hub` tool, you can just have the following:
-
-    target main
+If you do not use the `bin/git-hub` tool, you do not need a config file.
 
 # Caveats
 
@@ -192,12 +175,18 @@ These caveat's only apply to `bin/git-hub`.
 # Changes
 
 2021-10-28 - `git-refresh` no longer automaticallys stashes uncommitted
-changes. It was a great feature, but it turns out it's an anti-feature for
-those new to `git`. If there was a rebase conflict, they'd lose their changes.
+              changes. It was a great feature, but it turns out it's an
+              anti-feature for those new to `git`. If there was a rebase
+              conflict, they'd lose their changes because they would forget
+              to run `git stash pop` after.
+           -  We now automatically detect the main branch you should be
+              branching off of, refreshing from, and pushing back to. 
+              Only `bin/git-hub` requires a config file now.
 
-2021-10-24 - `git done` used to be called `git merge-with-master`, but with so many
-projects having a different "source" branch name, `merge-with-master` does not
-make sense any more. `git done` behaves exactl the same as
-`merge-with-master`.
+2021-10-24 - `git done` used to be called `git merge-with-master`, but with so
+             many projects having a different "source" branch name,
+             `merge-with-master` does not make sense any more. `git done`
+             behaves exactly the same as `merge-with-master`, but uses the
+             correct target branch.
 
 
