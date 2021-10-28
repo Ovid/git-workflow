@@ -26,13 +26,14 @@ while [[ $# -gt 0 ]]
 do
 key="$1"
 case $key in
+    -y|--yes)
+    prompt=0
+    shift
+    ;;
     -?|-h|--help)
     shift # past argument
     show_help;
     exit;
-    ;;
-    -y|--yes)
-    prompt=0
     ;;
     *)    # unknown option
     POSITIONAL+=("$1") # save it in an array for later
