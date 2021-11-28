@@ -26,9 +26,9 @@ We derive the default branch via:
     basename $( git symbolic-ref refs/remotes/origin/HEAD )
 
 If you get the error, `ref refs/remotes/origin/HEAD is not a symbolic ref`,
-you can run this:
+you can fix it with this:
 
-     git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/\$branch_name
+     git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/$branch_name
 
 Where \$branch_name is the name of the primary branch you develop from
 (`main`, `master`, etc.).
