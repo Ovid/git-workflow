@@ -25,10 +25,18 @@ We derive the default branch via:
 
     basename $( git symbolic-ref refs/remotes/origin/HEAD )
 
-Instead, new branches are created (usually for an individual github ticket),
-we hack, we regularly pull new changes into that branch, and after a pull
-request is created and the approved, we merge the code back into the default
-branch.
+If you get the error, `ref refs/remotes/origin/HEAD is not a symbolic ref`,
+you can run this:
+
+     git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/\$branch_name
+
+Where \$branch_name is the name of the primary branch you develop from
+(`main`, `master`, etc.).
+
+Instead, new branches are created (usually for an individual ticket or change
+request), we hack, we regularly pull new changes into that branch, and after a
+pull request is created and the approved, we merge the code back into the
+default branch.
 
 The examples below assume the files in the `bin/` directory are in your path.
 If they are not in yoru path, you have to type the commands explicitly:
