@@ -4,15 +4,18 @@ the World](https://allaroundtheworld.fr/) for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
-There are only four new commands to remember:
+There are only three new commands to remember:
 
-* `git hub $issue_number` (optional. create new branch based on a github ticket)
 * `git refresh` (rebase your work on top of the current default branch)
 * `git pushback` (pushes your changes to origin)
 * `git done` (cleanly add your branch back to the default branch)
 
-Note: only the `bin/git-hub` command assumes you're using github. The other
-commands work fine without it.
+There is an optional `git-hub` command available:
+
+* `git hub $issue_number` (optional. create new branch based on a github ticket)
+
+Only the `bin/git-hub` command assumes you're using github. The other commands
+work fine without it.
 
 # Assumptions
 
@@ -39,10 +42,15 @@ If they are not in yoru path, you have to type the commands explicitly:
 
 ## Checking Out a Branch
 
-We assume that branches are _usually_ per ticket. You can manually create a
-branch, but we tend not to. Instead, if you have been assigned (or taken)
-github issue 5738, with the title "Rework reputation to handle faction
-conflict", you run the following command:
+We recommend all work being done on a new branch that is not the "primary"
+branch. Thus, from your primary branch:
+
+    git checkout -b my-shiny-new-branch
+
+Optionally, if you are using github, we assume that branches are _usually_ per
+ticket. You can manually create a branch, but we tend not to. Instead, if you
+have been assigned (or taken) github issue 5738, with the title "Rework
+reputation to handle faction conflict", you run the following command:
 
     git hub 5738
 
@@ -51,6 +59,7 @@ And you're in a shiny new branch named `rework-reputation-to-handle-faction-conf
 If that branch already exists, it's checked out.
 
 This command is not required. Instead, create your own version if you need it.
+If you do want it, this command, see [Config File](#config-file) below.
 
 ## Refreshing Your Branch
 
