@@ -211,6 +211,10 @@ These caveat's only apply to `bin/git-hub`.
       behaves exactly the same as `merge-with-master`, but uses the
       correct target branch.
 
+# License
+
+This project is licensed under the terms of the MIT license.
+
 # ACKNOWLEDGEMENTS
 
 The following have added several valuable suggestions to this project.
