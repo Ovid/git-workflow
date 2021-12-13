@@ -74,9 +74,16 @@ if [ "$branch" == "$target" ]; then
   git fetch -p
   if git rev-parse '@{u}' >/dev/null 2>&1; then
     if [[ $need_to_stash ]]; then
+
+      # before fetching, prune any remote-tracking references that no longer
+      # exist on the remote.
+      git fetch -p
       if [ $stash == 1 ]; then
         git stash save "stashed by $prog (on branch $branch)"
-        git fetch -p
+
+        # only update to the new history if there is no divergent local
+        # history. This protects you in case you've committed to this branch
+        # and forgot to push your changes.
         git pull --ff-only
         git stash pop --index
       else
@@ -84,6 +91,9 @@ if [ "$branch" == "$target" ]; then
         exit 1
       fi
     else
+      # only update to the new history if there is no divergent local
+      # history. This protects you in case you've committed to this branch
+      # and forgot to push your changes.
       git pull --ff-only
     fi
   fi
@@ -93,12 +103,17 @@ else
     if [ $stash == 1 ]; then
       git stash save "stashed by $prog (on branch $branch)"
     else
-        echo You have uncommitted changes. Commit or stash them before rerunning $prog
-        exit 1
-      fi
+      echo You have uncommitted changes. Commit or stash them before rerunning $prog
+      exit 1
+    fi
   fi
   git checkout $target
+  # before fetching, prune any remote-tracking references that no longer
+  # exist on the remote.
   git fetch -p
+  # only update to the new history if there is no divergent local
+  # history. This protects you in case you've committed to this branch
+  # and forgot to push your changes.
   git pull --ff-only
   git checkout $branch
 

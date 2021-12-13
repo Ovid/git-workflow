@@ -81,15 +81,25 @@ fi
 
 ## pull latest master
 git checkout $target
+
+# prune local references to remote targets that no longer exist.
 git fetch --prune
+
+# Only merge if the merged-in history is a descendent of the current history.
+# If git can't do that, it aborts with a non-zero status
 git merge --ff-only origin/$target
 
 ## rebase branch against master and push back to origin
 git rebase $target $branch
+
+# --force-with-lease lets you overwrite chagnes to the remote branch that you
+# made, but not that other people have made
 git push --force-with-lease origin $branch
 
 ## merge branch onto master and push
 git checkout $target
+
+# create a merge commit in all cases
 git merge --no-ff $branch
 
 ## push new master
