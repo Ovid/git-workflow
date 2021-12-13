@@ -20,6 +20,8 @@ prompt=1
 
 # Parse arguments
 
+echo $0 is deprecated. Please see git-done in https://github.com/Ovid/git-workflow
+
 POSITIONAL=()
 while [[ $# -gt 0 ]]
 do
