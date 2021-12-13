@@ -2,8 +2,6 @@
 
 # vim: filetype=sh
 
-# vim: filetype=sh
-
 function show_help() {
     less <<END
 $(basename "$0") [-?|-h|--help|-s|--stash]
