@@ -35,7 +35,7 @@ Where \$branch_name is the name of the primary branch you develop from
 
 Instead, new branches are created (usually for an individual ticket or change
 request), we hack, we regularly pull new changes into that branch, and after a
-pull request is created and the approved, we merge the code back into the
+pull request is created and approved, we merge the code back into the
 default branch.
 
 The examples below assume the files in the `bin/` directory are in your path.
