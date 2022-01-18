@@ -10,9 +10,10 @@ There are only three new commands to remember:
 * `git pushback` (pushes your changes to origin)
 * `git done` (cleanly add your branch back to the default branch)
 
-There is an optional `git-hub` command available:
+There are optional commands available:
 
 * `git hub $issue_number` (optional. create new branch based on a github ticket)
+* `git swap` (optional. Toggle back and forth between the primary branch and your last active branch)
 
 Only the `bin/git-hub` command assumes you're using github. The other commands
 work fine without it.
@@ -153,6 +154,28 @@ With that, you get a clean git history like this:
 And when you're done, it will also print out the instructions on how you can
 delete your local and remote copies of the branch, to help you be nice and not
 leave branches cluttering up the repository.
+
+# git swap
+
+A common issue is wanting to compare the behavior of the branch you're
+currently working on and the behavior of your primary branch (typically
+`main`, `master`, or `dev`). It can get tedious always remembering and typing
+in the branch names for `git checkout`. The `git-swap` command will
+automatically swap you between the two:
+
+    (git-swap) $ git branch
+    * git-swap
+      main
+      some-other-branch
+    (git-swap) $ git swap
+    (main) $ git branch
+      git-swap
+    * main
+      some-other-branch
+    (main) $ git swap
+    (git-swap)
+
+This isn't necessary for the workflow, but it's a useful tool.
 
 # Config File
 
