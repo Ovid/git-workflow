@@ -56,7 +56,7 @@ set -Eeuo pipefail
 target=$(basename $( git symbolic-ref refs/remotes/origin/HEAD ) )
 if [ -z $target ]; then
     echo Could not determine target branch via '"basename $( git symbolic-ref refs/remotes/origin/HEAD )"'
-    echo "You scan set your target branch with"
+    echo "You can set your target branch with"
     echo ""
     echo "     git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/\$branch_name"
     echo ""
