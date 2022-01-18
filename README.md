@@ -40,7 +40,7 @@ pull request is created and approved, we merge the code back into the
 default branch.
 
 The examples below assume the files in the `bin/` directory are in your path.
-If they are not in yoru path, you have to type the commands explicitly:
+If they are not in your path, you have to type the commands explicitly:
 
     bin/git-hub 5738   # don't use if you don't use github
     bin/git-refresh
@@ -72,7 +72,7 @@ If you do want it, this command, see [Config File](#config-file) below.
 
 ## Refreshing Your Branch
 
-It's often the case that you want to pull in the latest the default branch to
+It's often the case that you want to pull in the latest default branch to
 keep your code up-to-date. Working on a change for a week with a fast-moving
 codebase can cause serious headaches when it's time to merge. Thus, you should
 regularly run the following in your branch (I try to run it at least once per
@@ -91,7 +91,7 @@ In other words, it cleanly rebases your code on top of the target branch.
 
 If you have uncommitted changes, `git refresh` will print an error an exit. If
 you pass `--stash` (or `-s`), it will stash your changes, run the commands,
-and the pop your changes. However, this means that if you have a rebase
+and then pop your changes. However, this means that if you have a rebase
 conflict, you will have stashed changes you will need to remember to pop off
 the stash.
 
