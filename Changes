@@ -1,0 +1,36 @@
+2022-01-20
+    - Add Changes file
+2021-12-13
+    - Document that it's under the MIT license.
+2021-12-13
+    - Mark git-merge-with-master as deprecated.
+2021-11-28
+    - Separate the optional git-hub from the other commands.
+2021-11-28
+    - Document how to fix the "target branch" error.
+2021-10-28
+    - Added acknowledgements
+2021-10-28
+    - Remove need to hardcode your target (source) branch in a config file
+2021-10-28
+    - `git refresh` no longer autostashes changes
+2021-10-26
+    - s/-f/--force-with-lease/ in `git pushback`
+2021-10-24
+    - Add `git pushback` command
+2021-10-24
+    - Create `git done` to replace `git merge-with-master`
+2021-03-09
+    - All scripts are now bash and have docs
+2021-03-04
+    - Add experimental bash replacement for git-hub
+2020-06-06
+    - Add IPC::System::Simple to the README.md
+2020-05-13
+    - Use a more portable shebang line in the shell scripts.
+2020-04-13
+    - Explain that merge-with-master helps to keep your code clean
+2020-04-13
+    - Add a README.md
+2020-04-13
+    - Add three small git utilities
