@@ -10,12 +10,19 @@ There are only three new commands to remember:
 * `git pushback` (pushes your changes to origin)
 * `git done` (cleanly add your branch back to the default branch)
 
-There is an optional `git-hub` command available:
+There are optional `git-hub` and `git-lab` commands available:
 
 * `git hub $issue_number` (optional. create new branch based on a github ticket)
 
-Only the `bin/git-hub` command assumes you're using github. The other commands
+* `git lab $issue_number` (optional. create new branch based on a gitlab ticket)
+
+The `bin/git-hub` command assumes you're using github and the `bin/git-lab`
+command asumes you're using gitlab. The other commands
 work fine without it.
+
+The `bin/git-lab` and `bin/git-hub` commands require config files. The
+`bin/git-lab` config file is documented via `perldoc bin/git-lab`. The
+`bin/git-hub` config file is documented below.
 
 # Assumptions
 

@@ -1,0 +1,326 @@
+#!/usr/bin/env perl
+
+# vim: filetype=perl
+
+use v5.28.0;
+use warnings;
+use Sub::StrictDecl;
+use Text::Unidecode;
+use File::Spec;
+use Config::IniFiles;
+use GitLab::API::v4;
+use Getopt::Long 'GetOptions';
+use Pod::Usage 'pod2usage';
+use feature 'signatures';
+no warnings 'experimental::signatures';
+
+sub make_slug ($title) {
+    my $slug = lc unidecode($title);
+    $slug =~ s/^\s+|\s+$//g;    # trim
+    $slug =~ s/\s+/_/g;
+    $slug =~ tr/-/_/;
+    $slug =~ s/__*/_/g;
+    $slug =~ s/\W//g;
+    $slug =~ tr/_/-/;
+    $slug =~ s/--/-/g;
+    return $slug;
+}
+
+sub get_current_branch_name () {
+    chomp( my $branch = qx(git rev-parse --abbrev-ref HEAD) );
+    return $branch;
+}
+
+sub get_project_from_config ($config) {
+    my $config_file = $config->GetFileName;
+    my $project_id  = $config->val( 'gitlab', 'project_id' );
+    my @projects    = $config->GroupMembers('project');
+
+    if ( !defined $project_id && !@projects ) {
+        die "$config_file must contain a gitlab.project_id or project groups.";
+    }
+
+    my %project_id_for;
+    foreach my $project (@projects) {
+        my $name       = $project =~ s/^project\s+//r;
+        my $project_id = $config->val( $project, 'project_id' )
+          or die "gitlab group '$project' does not contain a project id in $config_file";
+        $project_id_for{$name} = $project_id;
+    }
+
+    if (%project_id_for) {
+        my %name_for_id = reverse %project_id_for;
+        if ( defined $project_id ) {
+            if ( my $name = $name_for_id{$project_id} ) {
+                $name_for_id{$project_id} = "$name (default)";
+                %project_id_for = reverse %name_for_id;
+            }
+            else {
+                warn "gitlab.project_id $project_id found, but no listed in project groups. Ignoring";
+            }
+        }
+
+        # IO::Prompter, via tmux, using my AWS Workspace, got very confused
+        # about text I was entering, so let's do more work, but less magic.
+        #
+        # The following will create a project similar to:
+        #
+        #   Choose which project this ticket is for:
+        #       1: Front End
+        #       2: Customer Backend
+        #   >
+        my $max     = keys %project_id_for;
+        my $number  = 1;
+        my %choices = map { $number++ => $_ } sort values %name_for_id;
+
+        my $chosen;
+        while ( !$chosen ) {
+            say "Choose which project this ticket is for:";
+            foreach my $number ( 1 .. $max ) {
+                say "    $number: $choices{$number}";
+            }
+            print "> ";
+            chomp( my $response = <STDIN> );
+            if ( !$response && defined $project_id ) {
+
+                # they hit return and chose the default
+                $chosen = $project_id;
+            }
+            elsif ( exists $choices{$response} ) {
+                $chosen = $project_id_for{ $choices{$response} };
+            }
+            say "\nPlease enter a number from 1 to $max\n";
+        }
+        my $name = $name_for_id{$chosen};
+        say "You chose project $name";
+    }
+    return $project_id;
+}
+
+sub get_config () {
+    my $config_file = File::Spec->catfile('.git-lab');
+    if ( !-e $config_file ) {
+        $config_file = File::Spec->catfile( $ENV{HOME}, '.git-lab' );
+    }
+    my $config     = Config::IniFiles->new( -file => $config_file );
+    my $url        = $config->val( 'gitlab',      'url' )   or die "gitlab.url not found in $config_file";
+    my $token      = $config->val( 'gitlab',      'token' ) or die "gitlab.token not found in $config_file";
+    my $user       = $config->val( 'preferences', 'user' ) || $ENV{USER} || die "Could not determine user";
+    my $max_length = $config->val( 'preferences', 'max_length' ) || 50;
+    my $project_id = get_project_from_config($config);
+    return {
+        url        => $url,
+        token      => $token,
+        project_id => $project_id,
+        user       => $user,
+        max_length => $max_length,
+    };
+}
+
+sub get_new_branch_name ($issue_id) {
+    my $config = get_config();
+    my $api    = GitLab::API::v4->new(
+        url           => $config->{url},
+        private_token => $config->{token},
+    );
+
+    my $issue = $api->issue( $config->{project_id}, $issue_id )
+      or die "No issues found for project $config->{project_id}, issue $issue_id";
+
+    my $title = $issue->{title};
+
+    if ( $issue->{state} eq 'closed' ) {
+        say "Issue $issue_id is closed. Will not create branch for '$title'";
+        exit 1;
+    }
+
+    my $slug = make_slug($title);
+
+    if ( length($slug) > $config->{max_length} ) {
+        $slug =~ s/^(.{$config->{max_length}}+[^-]*).*$/$1/;
+    }
+
+    return "$config->{user}/$slug-$issue_id";
+}
+
+sub delete_branch ( $branch, $opt_for ) {
+    my $delete = $opt_for->{hard_delete} ? '-D' : '-d';
+    say "About to run `git branch $delete $branch`";
+    print "\nAre you sure you wish to delete '$branch'? [y/N] ";
+    chomp( my $response = <STDIN> );
+    unless ( $response =~ /^y(?:es)?$/i ) {
+        say "OK. I won't delete '$branch'";
+        exit;
+    }
+    exec( 'git', 'branch', $delete, $branch );
+}
+
+sub checkout_branch ( $branch, $opt_for ) {
+    if ( system( 'git', 'rev-parse', '--verify', '--quite', $branch ) == 0 ) {
+
+        # branch already exists
+        say "git checkout $branch";
+        exec( 'git', 'checkout', $branch );
+    }
+    else {
+        my $current_branch = get_current_branch_name();
+
+        if ( $current_branch ne 'trunk' && !$opt_for->{current} ) {
+            pod2usage(
+                -exitval => 1,
+                -verbose => 1,
+                -msg     => "\nRefusing to branch off $current_branch.\n",
+            );
+        }
+
+        # create the branch
+        say "git checkout -b $branch";
+        exec( 'git', 'checkout', '-b', $branch );
+    }
+}
+
+
+sub MAIN () {
+
+    # there does not appear to be a way to force Getopt::Long to have
+    # case-sensitive options (aside from single-character bundling)
+    my $hard_delete = grep {/^(?:-D|--DELETE)$/} @ARGV;
+    GetOptions(
+        \my %opt_for,
+        'current',
+        'delete',
+        'help|?',
+    ) || pod2usage( -exitval => 1, -verbose => 1 );
+    pod2usage( -exitval => 0, -verbose => 2 ) if $opt_for{help};
+
+    $opt_for{hard_delete} = $hard_delete;
+    $opt_for{delete}      = 1 if $hard_delete;
+
+    my $issue_id = shift @ARGV
+      or die "Usage: $0 \$issue_id";
+
+    my $branch = get_new_branch_name($issue_id);
+
+    if ( $opt_for{delete} ) {
+        delete_branch( $branch, \%opt_for );
+    }
+    else {
+        checkout_branch( $branch, \%opt_for );
+    }
+}
+
+MAIN;
+
+__END__
+
+
+=head1 NAME
+
+git-lab - Create a branch from a gitlab ticket
+
+=head1 USAGE
+
+    git lab           $ticket_number   # create branch from ticket (only if on trunk)
+    git lab --DELETE  $ticket_number   # delete aforementioned branch
+    git lab --current $ticket_number   # create branch from ticket (off current branch)
+
+=head1 OPTIONS
+
+    Name                         Meaning
+    -c,--current                 Create branch off current branch
+    -d,--delete                  Delete branch for ticket (git branch -d)
+    -D,--DELETE                  Hard delete branch for ticket (git branch -D)
+    -h,--help,-?                 Show help and exit
+
+=head1 DESCRIPTION
+
+Assuming ticket 305 is named "My Awesome Feature",
+running the following command will create an appropriately named branch and
+check it out:
+
+    {trunk} $ git lab 305
+    git checkout -b ovid/my-awesome-feature-305
+    Switched to a new branch 'ovid/my-awesome-feature-305'
+    {ovid/my-awesome-feature-305} $
+
+This assures greater consistency of branch names and makes it easier to create
+them on the fly.
+
+You should I<usually> run this command from your main development branch
+(C<main>, C<master>, C<devel>, etc.). If you attempt to run this command from
+a different branch, it will fail unless you pass the C<--current> option.
+
+If you run C<< git lab $ticket_number >> and the branch already exists, it
+will simply check out the branch without trying to create it. Note that if the
+ticket title is changed or your username changes (typically via changing it in
+config), this will not detect the branch.
+
+=head1 CONFIG FILE
+
+You must create a config file named C<.git-lab>.
+
+    [gitlab]
+    url=https://gitlab.mycompany.com/api/v4
+    token=$token
+    project_id=$project_id
+
+    [preferences]
+    user=$user_name
+    max_length=50
+
+We look for the C<.git-lab> config file first in the current directory
+(allowing you to have different configurations per project) and fall back to
+your home directory if no config file found in the current directory.
+
+Instructions for creating your personal access token can be found at
+https://docs.gitlab.com/ee/user/profile/personal_access_tokens.html
+
+To get your project id, visit your project home page in gitlab. Just under the
+name is C<Project ID: $project_id>.
+
+The C<[gitlab]> section is mandatory. You only need fill in the token and
+project_id.
+
+The C<[preferences]> section is optional. The user defaults to C<$ENV{USER}>.
+The max length (limits the length of the branch name to $max_length plus a few
+characters) defaults to 50.  If you want this code to support multiple
+projects, patches welcome :)
+
+=head2 Working With Multiple Projects
+
+If you need to create branches for multiple projects, the above configuration
+is not enough.
+
+Instead, in the config file, you need a project group for each project. Each
+group section should be identified as C<< [project $name] >> with a
+C<project_id> key:
+
+    [project Front End]
+    project_id=12345
+    [project Customer Backend]
+    project_id=12346
+
+When you run C<git lab $ticket_number>, you will be prompted to choose which
+project the ticket is for:
+
+    Choose which project this ticket is for:
+        1: Front End
+        2: Customer Backend
+    >
+
+If you prefer, you can I<still> have a C<gitlab.project_id> field:
+
+    [gitlab]
+    url=https://gitlab.mycompany.com/api/v4
+    token=$token
+    project_id=12346
+
+If you do and that project id is in the project groups, it will be used as
+the default:
+
+    Choose which project this ticket is for:
+        1: Front End
+        2: Customer Backend (default)
+    >
+
+Hitting "return" is enough to select that project.
