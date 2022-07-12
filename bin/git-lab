@@ -160,7 +160,10 @@ sub delete_branch ( $branch, $opt_for ) {
 }
 
 sub checkout_branch ( $branch, $opt_for ) {
-    if ( system( 'git', 'rev-parse', '--verify', '--quite', $branch ) == 0 ) {
+
+    # we can't do 2>/dev/null, so let's just discard the error since all we
+    # need to know is that the exit status is zero
+    if ( system( 'git', 'rev-parse', '--verify', '--quiet', $branch ) == 0 ) {
 
         # branch already exists
         say "git checkout $branch";
