@@ -121,7 +121,7 @@ sub get_config () {
     };
 }
 
-sub get_new_branch_name ($issue_id) {
+sub get_branch_name ( $issue_id, $opt_for ) {
     my $config = get_config();
     my $api    = GitLab::API::v4->new(
         url           => $config->{url},
@@ -133,7 +133,7 @@ sub get_new_branch_name ($issue_id) {
 
     my $title = $issue->{title};
 
-    if ( $issue->{state} eq 'closed' ) {
+    if ( $issue->{state} eq 'closed' && !$opt_for->{delete} ) {
         say "Issue $issue_id is closed. Will not create branch for '$title'";
         exit 1;
     }
@@ -183,7 +183,6 @@ sub checkout_branch ( $branch, $opt_for ) {
     }
 }
 
-
 sub MAIN () {
 
     # there does not appear to be a way to force Getopt::Long to have
@@ -203,7 +202,7 @@ sub MAIN () {
     my $issue_id = shift @ARGV
       or die "Usage: $0 \$issue_id";
 
-    my $branch = get_new_branch_name($issue_id);
+    my $branch = get_branch_name( $issue_id, \%opt_for );
 
     if ( $opt_for{delete} ) {
         delete_branch( $branch, \%opt_for );
