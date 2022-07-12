@@ -2,7 +2,7 @@
 
 # vim: filetype=perl
 
-use v5.28.0;
+use v5.24.0;
 use warnings;
 use Sub::StrictDecl;
 use Text::Unidecode;
@@ -222,7 +222,7 @@ __END__
 
 =head1 NAME
 
-git-lab - Create a branch from a gitlab ticket
+git-lab - Create/Delete branches from gitlab tickets
 
 =head1 USAGE
 
