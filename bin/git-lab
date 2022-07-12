@@ -48,7 +48,11 @@ sub get_project_from_config ($config) {
         $project_id_for{$name} = $project_id;
     }
 
-    if (%project_id_for) {
+    if ( keys %project_id_for == 1 ) {
+        my @id = values %project_id_for;
+        return $id[0];
+    }
+    else {
         my %name_for_id = reverse %project_id_for;
         if ( defined $project_id ) {
             if ( my $name = $name_for_id{$project_id} ) {
