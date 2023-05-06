@@ -97,6 +97,7 @@ sub get_project_from_config ($config) {
         }
         my $name = $name_for_id{$chosen};
         say "You chose project $name";
+        $project_id = $chosen;
     }
     return $project_id;
 }
