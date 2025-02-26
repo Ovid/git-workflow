@@ -4,21 +4,93 @@ the World](https://allaroundtheworld.fr/) for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
+The `git workflow` tools are designed to support a [trunk-based
+development](https://www.atlassian.com/continuous-delivery/continuous-integration/trunk-based-development)
+model popular with DevOps and teams who understand the value of a clean
+`git` history.
+
 There are only three new commands to remember:
 
 * `git refresh` (rebase your work on top of the current default branch)
 * `git pushback` (pushes your changes to origin)
 * `git done` (cleanly add your branch back to the default branch)
 
+# Typical Workflow
+
+The `git-workflow` project assumes a trunk-based development model. Developers
+create short-lived branches off of `main`, `master`, or whatever your "trunk"
+branch is called. The basic workflow looks like this:
+
+_Note that you can type the commands as either `git-refresh` or `git refresh`.
+So long as the bash scripts are in your path, either form works._
+
+    $ git checkout main                 # start from the trunk brank
+    $ git refresh                       # make sure `main` is up to date
+    $ git checkout -b my-amazing-bugfix # create your branch
+    # hack, hack, hack
+    $ git refresh                       # rebase on main, just in case
+    $ git pushback                      # push code to remote and create mr/pr
+    $ git done                          # when approved, merge back into main
+
+And that's it! An easy-to-use git workflow.
+
+If your branch is long-lived, or you have lots of updates to your trunk
+branch, you should probably run `git refresh` regularly. If you have merge
+conflicts, it's the easiest way to keep them small.
+
+# Rationale
+
+This is _opinionated_ software based on our experience in consulting with many
+companies over the years. To maintain a clean `git` history, using git's
+built-in commands is great, but you often have to run several of them at a
+time and it's easy to forget one, or to use the wrong one (particularly for
+those inexperienced with `git`). For example, to cleanly rebase your branch on
+top of `main`, here's one way to do that:
+
+    $ git checkout main
+    $ git pull --ff-only --prune
+    $ git checkout my-amazing-bugfix
+    $ git rebase main
+
+Do you know what all of those do? Do you always remember to run them? No? Just
+do this instead:
+
+    $ git refresh
+
+And you're done.
+
+Ready to merge your branch back into `main`, but want a clean `git` history
+and want to clean up cruft? Here's one way to do that:
+
+    $ git checkout main
+    $ git fetch -p
+    $ git merge --ff-only origin/main
+    $ git rebase main my-awesome-bugfix
+    $ git push --force-with-lease origin my-awesome-bugfix
+    $ git checkout main
+    $ git merge --no-ff my-awesome-bugfix
+    $ git push origin main
+
+Will you always remember that? No? Just type `git done` instead.
+
+Bonus points for those who know the difference between `--force` and
+`--force-with-lease`.
+
+This workflow creates a nice, clean git history which is easy to use with `git
+bisect`. It's trivial to scan it with `git log --graph --oneline` and see
+what's going on.
+
+# Automatic Branch Creation
+
 There are optional `git-hub` and `git-lab` commands available:
 
 * `git hub $issue_number` (optional. create new branch based on a github ticket)
-
 * `git lab $issue_number` (optional. create new branch based on a gitlab ticket)
 
 The `bin/git-hub` command assumes you're using github and the `bin/git-lab`
 command asumes you're using gitlab. The other commands
-work fine without it.
+work fine without it. Both of them require extra dependencies are are just
+here for convenience. Feel free to ignore them.
 
 The `bin/git-lab` and `bin/git-hub` commands require config files. The
 `bin/git-lab` config file is documented via `perldoc bin/git-lab`. The
