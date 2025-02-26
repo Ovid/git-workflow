@@ -294,10 +294,16 @@ These caveat's only apply to `bin/git-hub`.
 
 This project is licensed under the terms of the MIT license.
 
-# ACKNOWLEDGEMENTS
+# Author
+
+Curtis "Ovid" Poe. Copyright 2021-2025, all rights reserved.
+
+# Acknowledgements
 
 The following have added several valuable suggestions to this project.
 
 * Peter Mottram
 * Noel Maddy
 * Branislav Zahradník
+* Sébastien Feugère
+* Zoffix Znet
