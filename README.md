@@ -6,8 +6,7 @@ together.
 
 The `git workflow` tools are designed to support a [trunk-based
 development](https://www.atlassian.com/continuous-delivery/continuous-integration/trunk-based-development)
-model popular with DevOps and teams who understand the value of a clean
-`git` history.
+model popular with DevOps and teams who value a clean `git` history.
 
 There are only three new commands to remember:
 
@@ -104,12 +103,16 @@ We derive the default branch via:
 
     basename $( git symbolic-ref refs/remotes/origin/HEAD )
 
-If you get the error, `ref refs/remotes/origin/HEAD is not a symbolic ref`,
-you can fix it with this:
+Alternatively, you can do this:
+
+    git remote show origin | grep 'HEAD branch' | cut -d' ' -f5
+
+If you get the error from the first command, `ref refs/remotes/origin/HEAD is not a symbolic ref`,
+or the second command prints nothing, you can set the name of the branch with this:
 
      git symbolic-ref refs/remotes/origin/HEAD refs/remotes/origin/$branch_name
 
-Where \$branch_name is the name of the primary branch you develop from
+Where `$branch_name` is the name of the primary branch you develop from
 (`main`, `master`, etc.).
 
 Instead, new branches are created (usually for an individual ticket or change
@@ -269,6 +272,10 @@ These caveat's only apply to `bin/git-hub`.
    (https://stedolan.github.io/jq/)
 
 # Changes
+
+2025-03-10
+
+    - Cleaned up the `README.md` documentation. No functional changes.
 
 2021-10-28 
 
