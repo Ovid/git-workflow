@@ -1,6 +1,6 @@
 
-This repo contains a simplified subset of the git tools used by [All Around
-the World](https://allaroundtheworld.fr/) for our software development. It
+This repo contains a simplified subset of the git tools used by our consulting
+company for our software development. It
 makes it dead easy for teams using git (and in our case, github) to work
 together.
 
